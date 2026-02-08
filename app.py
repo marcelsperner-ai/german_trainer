@@ -9,6 +9,19 @@ import json
 st.set_page_config(page_title="Vokabeltrainer V2", layout="wide")
 CONFIG_FILE = "modules.json"
 
+st.markdown("""
+<style>
+    /* Sucht nach Buttons in der Navigations-Sektion */
+    div[data-testid="stColumn"] button {
+        padding-top: 5px !important;
+        padding-bottom: 5px !important;
+        height: auto !important;
+        min-height: 0px !important;
+        font-size: 14px !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # --- DATEN MANAGEMENT ---
 
 def load_module_config():
@@ -149,8 +162,6 @@ with st.sidebar:
 
 # --- HAUPTBEREICH ---
 
-st.title(f"Lektion: {st.session_state.current_dataset_name}")
-
 if df.empty:
     st.warning("⚠️ Keine Daten gefunden.")
     st.info("Bitte führe ggf. das Python-Skript aus oder wähle ein anderes Modul.")
@@ -204,10 +215,10 @@ with tab1:
                     st.rerun()
         st.markdown("---")
         c_prev, c_next = st.columns([1,1])
-        if c_prev.button("⬅️ Zurück", key="fc_back", disabled=not st.session_state.history):
+        if c_prev.button("⬅️", key="fc_back", disabled=not st.session_state.history):
             prev_card()
             st.rerun()
-        if c_next.button("Nächste Karte ➡️", key="fc_next", type="primary"):
+        if c_next.button("➡️", key="fc_next", type="primary"):
             next_card()
             st.rerun()
 
@@ -247,7 +258,8 @@ with tab2:
                 st.rerun()
         st.markdown("---")
         
-        c_prev, c_next = st.columns([1,1])
+        # Erzeugt 4 Spalten, die Buttons nutzen nur die mittleren (schmaleren) Spalten
+        _, c_prev, c_next, _ = st.columns([2, 0.6, 0.6, 2])
         
         # HIER IST DIE ÄNDERUNG: on_click=reset_input
         if c_prev.button("⬅️ Zurück", key="wr_back", disabled=not st.session_state.history, on_click=reset_input):
