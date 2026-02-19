@@ -5,312 +5,272 @@ import re
 import os
 import json
 
-# --- KONFIGURATION ---
-st.set_page_config(page_title="Vokabeltrainer V2", layout="wide")
-CONFIG_FILE = "modules.json"
+# --- CONFIG & CSS ---
+st.set_page_config(page_title="Vokabeltrainer Pro", layout="wide")
 
 st.markdown("""
 <style>
-    /* Sucht nach Buttons in der Navigations-Sektion */
-    div[data-testid="stColumn"] button {
-        padding-top: 5px !important;
-        padding-bottom: 5px !important;
-        height: auto !important;
-        min-height: 0px !important;
-        font-size: 14px !important;
+    .main .block-container { padding: 0.5rem 0.5rem !important; }
+    .vocab-card {
+        background-color: #ffffff;
+        border: 2px solid #f0f2f6;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
+    .main-word { font-size: 20px !important; font-weight: bold !important; color: #0E1117; }
+    .sub-word { font-size: 17px !important; color: #555; margin-top: 8px; }
+    .example-box { 
+        background-color: #f0f4f8; 
+        padding: 12px; 
+        border-radius: 10px; 
+        border-left: 5px solid #007bff; 
+        margin-top: 15px; 
+        text-align: left; 
+        font-size: 14px; 
+        line-height: 1.4;
+    }
+    div.stButton > button { width: 100% !important; border-radius: 10px !important; height: 3em !important; font-size: 13px !important; }
+    [data-testid="stSidebar"] div.stButton > button { height: 2.2em !important; font-size: 11px !important; text-align: left !important; }
+    button[data-baseweb="tab"] { font-size: 11px !important; padding: 0px 5px !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- DATEN MANAGEMENT ---
+# --- HILFSFUNKTIONEN ---
 
-def load_module_config():
-    """Lädt die Liste der verfügbaren Module strikt aus der JSON-Datei."""
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-            
-    default_config = {
-        "B2: Verben mit Präpositionen": "vokabeln.csv",
-        "B1: Allgemeiner Wortschatz (Basis)": "vokabeln_b1.csv"
-    }
-    
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(default_config, f, indent=4)
-    return default_config
+def clean_grammar(text):
+    if not isinstance(text, str): return str(text)
+    return re.sub(r'\s*\(.*?\)', '', text).strip()
 
-def save_module_config(config):
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=4, ensure_ascii=False)
+def mask_word(text, word_to_hide):
+    if not isinstance(text, str) or not word_to_hide: return str(text)
+    pure_word = str(word_to_hide).split('+')[0].strip()
+    if not pure_word or pure_word == "–": return text
+    pattern = re.compile(rf'\b{re.escape(pure_word)}\b', re.IGNORECASE)
+    if pattern.search(text):
+        return pattern.sub("_______", text)
+    return f"{text} (_______)"
 
-def create_new_module_file(filename):
-    columns = [
-        'Deutsch', 'Farsi', 'English', 
-        'Beispielsatz', 'Beispielsatz_Farsi', 
-        'Status', 'Präposition', 'Artikel', 'Plural'
-    ]
-    df = pd.DataFrame(columns=columns)
-    df.to_csv(filename, index=False)
+def parse_prep_info(prep_str):
+    prep_str = str(prep_str)
+    if not prep_str or "+" not in prep_str: return prep_str, "Unbekannt"
+    parts = prep_str.split('+')
+    prep = parts[0].strip()
+    k_code = parts[1].strip().upper()
+    kasus = "Dativ" if "D" in k_code else "Akkusativ" if "A" in k_code else "Genitiv" if "G" in k_code else "Unbekannt"
+    return prep, kasus
 
-def load_data(filename):
-    if not os.path.exists(filename):
-        return pd.DataFrame()
-    
+def extract_verb(full_text):
+    light_verbs = ["nehmen", "kommen", "geben", "haben", "führen", "stellen", "leisten", "treten", "bringen", "treffen", "ziehen", "machen", "halten", "zeigen", "setzen", "fallen"]
+    cleaned = clean_grammar(full_text).lower()
+    words = cleaned.split()
+    for v in light_verbs:
+        if v in words: return v
+    return words[-1] if words else ""
+
+def show_example(row):
+    if str(row.get('Beispielsatz', '')).strip():
+        st.markdown(f"""<div class="example-box">
+            <b>Kontext / Beispiel:</b><br>
+            <span style="color: #1a1a1a;">{row['Beispielsatz']}</span><br>
+            <i style="color: #555;">{row.get('Beispielsatz_Farsi', '')}</i>
+        </div>""", unsafe_allow_html=True)
+
+def get_pons_url(word):
+    query = clean_grammar(word).replace(" ", "+")
+    return f"https://de.pons.com/text-%C3%BCbersetzung/deutsch-persisch?q={query}"
+
+# --- DATA LOGIC ---
+
+def load_data(file):
+    if not os.path.exists(file): return pd.DataFrame()
     try:
-        df = pd.read_csv(filename, on_bad_lines='skip')
-        required_cols = ['Deutsch', 'Farsi', 'English', 'Beispielsatz', 'Beispielsatz_Farsi', 'Status', 'Präposition', 'Artikel', 'Plural']
-        for col in required_cols:
-            if col not in df.columns:
-                df[col] = "" if col != 'Status' else "Neutral"
-        return df.fillna("")
-    except Exception as e:
-        st.error(f"Fehler beim Laden: {e}")
-        return pd.DataFrame()
-
-def save_data(df, filename):
-    df.to_csv(filename, index=False)
-
-def update_status(df, index, status, filename):
-    df.at[index, 'Status'] = status
-    save_data(df, filename)
-    st.toast(f"Status gespeichert: {status}", icon="💾")
-
-def get_weighted_random_index(df):
-    if df.empty: return 0
-    weights = [10 if s == 'Red' else 0.2 if s == 'Green' else 2 for s in df['Status']]
-    try:
-        return random.choices(df.index, weights=weights, k=1)[0]
+        df = pd.read_csv(file, on_bad_lines='skip').fillna("")
+        df.columns = [c.replace('"', '').strip() for c in df.columns]
+        if not df.empty:
+            df = df[df['Deutsch'].astype(str).str.lower() != 'deutsch']
+            df = df[df['Deutsch'].astype(str).str.strip() != '']
+        if 'Status' not in df.columns: df['Status'] = "Neutral"
+        return df.reset_index(drop=True)
     except:
-        return 0
-
-def hide_term_in_sentence(sentence, term):
-    if not sentence or not term: return sentence
-    pattern = re.compile(re.escape(term), re.IGNORECASE)
-    return pattern.sub("___", sentence)
+        return pd.DataFrame()
 
 # --- INITIALISIERUNG ---
+if os.path.exists("modules.json"):
+    with open("modules.json", 'r', encoding='utf-8') as f:
+        modules = json.load(f)
+else:
+    modules = {"Standard": "vokabeln.csv"}
 
-modules = load_module_config()
+if 'current_mod' not in st.session_state:
+    st.session_state.current_mod = list(modules.keys())[0]
 
-if 'current_dataset_name' not in st.session_state:
-    if "🏆 B1: Gesamtliste (780 Wörter)" in modules:
-        st.session_state.current_dataset_name = "🏆 B1: Gesamtliste (780 Wörter)"
-    else:
-        if modules:
-            st.session_state.current_dataset_name = list(modules.keys())[0]
-        else:
-            st.session_state.current_dataset_name = "Keine Module"
+current_file = modules[st.session_state.current_mod]
 
-current_file = modules.get(st.session_state.current_dataset_name, "vokabeln.csv")
+if 'df' not in st.session_state or st.session_state.get('last_file') != current_file:
+    st.session_state.df = load_data(current_file)
+    st.session_state.last_file = current_file
+    st.session_state.idx = 0 if not st.session_state.df.empty else None
+    st.session_state.show = False
+    st.session_state.hist = []
 
-if 'vocab_df' not in st.session_state or st.session_state.get('loaded_file') != current_file:
-    st.session_state.vocab_df = load_data(current_file)
-    st.session_state.loaded_file = current_file
-    st.session_state.history = []
-    if not st.session_state.vocab_df.empty:
-        st.session_state.current_idx = get_weighted_random_index(st.session_state.vocab_df)
-    else:
-        st.session_state.current_idx = 0
-    st.session_state.show_solution = False
-
-df = st.session_state.vocab_df
-
-# --- NAVIGATION & STATE HELPERS ---
-
-def reset_input():
-    """Callback um das Eingabefeld zu leeren"""
-    st.session_state.write_input = ""
-
-def next_card():
-    st.session_state.history.append(st.session_state.current_idx)
-    current_df = st.session_state.vocab_df
-    if not current_df.empty:
-        st.session_state.current_idx = get_weighted_random_index(current_df)
-    st.session_state.show_solution = False
-
-def prev_card():
-    if st.session_state.history:
-        st.session_state.current_idx = st.session_state.history.pop()
-        st.session_state.show_solution = False
+def get_next():
+    if st.session_state.df is None or st.session_state.df.empty: return
+    st.session_state.hist.append(st.session_state.idx)
+    df_curr = st.session_state.df
+    weights = [10 if str(s) == 'Red' else 0.2 if str(s) == 'Green' else 2 for s in df_curr['Status']]
+    st.session_state.idx = random.choices(df_curr.index, weights=weights, k=1)[0]
+    st.session_state.show = False
 
 # --- SIDEBAR ---
-
 with st.sidebar:
     st.title("📚 Module")
-    st.caption("Wähle ein Thema:")
-    
-    sorted_keys = sorted(modules.keys())
-    for mod_name in sorted_keys:
-        btn_type = "primary" if st.session_state.current_dataset_name == mod_name else "secondary"
-        if st.button(mod_name, key=f"btn_{mod_name}", type=btn_type, use_container_width=True):
-            st.session_state.current_dataset_name = mod_name
+    for mod_name in sorted(modules.keys()):
+        is_active = st.session_state.current_mod == mod_name
+        if st.button(mod_name, key=f"nav_{mod_name}", type="primary" if is_active else "secondary"):
+            st.session_state.current_mod = mod_name
             st.rerun()
 
-    st.markdown("---")
-    with st.expander("➕ Neues Modul erstellen"):
-        with st.form("new_module_form"):
-            new_mod_name = st.text_input("Name")
-            submit_new = st.form_submit_button("Erstellen")
-            if submit_new and new_mod_name:
-                safe_filename = "".join([c for c in new_mod_name if c.isalnum()]).lower() + "_custom.csv"
-                create_new_module_file(safe_filename)
-                modules[new_mod_name] = safe_filename
-                save_module_config(modules)
-                st.session_state.current_dataset_name = new_mod_name
-                st.success("Erstellt!")
-                st.rerun()
+# --- MAIN APP ---
+df = st.session_state.df
+if df is None or df.empty:
+    st.error("Keine Daten geladen.")
+    st.stop()
 
-# --- HAUPTBEREICH ---
+row = df.loc[st.session_state.idx]
+has_prep_col = "Präposition" in df.columns and any(str(x).strip() != "" and str(x).strip() != "–" for x in df["Präposition"])
+has_expl_col = "Erläuterung" in df.columns
 
-if df.empty:
-    st.warning("⚠️ Keine Daten gefunden.")
-    st.info("Bitte führe ggf. das Python-Skript aus oder wähle ein anderes Modul.")
-    row = pd.Series({c: "" for c in df.columns})
-    is_empty_mode = True
-else:
-    if st.session_state.current_idx not in df.index:
-        st.session_state.current_idx = df.index[0]
-    row = df.loc[st.session_state.current_idx]
-    is_empty_mode = False
+# --- EINZIGE TAB-ERSTELLUNG ---
+tab_list = ["🃏 Karte"]
+if has_prep_col: tab_list += ["🎯 Präp", "⚖️ Kasus"]
+if has_expl_col: tab_list += ["🧩 Verb", "✍️ Syn"]
+if not has_prep_col and not has_expl_col: tab_list += ["✍️ Üben", "🧩 Lücke"]
+tab_list += ["🔍 PONS", "📝 Liste"]
 
-is_b2_mode = "Präposition" in row and str(row['Präposition']).strip() != ""
+tabs = st.tabs(tab_list)
 
-tab1, tab2, tab3, tab4 = st.tabs(["🃏 Flashcards", "✍️ Schreiben", "🧩 Lückentext", "📝 Liste"])
+def card_display(main, sub, info="", color="none"):
+    border_color = "#28a745" if color == "green" else "#dc3545" if color == "red" else "#f0f2f6"
+    st.markdown(f"""<div class="vocab-card" style="border-color: {border_color}">
+        <div class="main-word">{main}</div><div class="sub-word">{sub}</div>
+        <div style="font-size: 11px; color: gray; margin-top: 8px;">{info}</div></div>""", unsafe_allow_html=True)
 
-with tab1:
-    if is_empty_mode:
-        st.write("---")
+# --- TAB INHALTE ---
+current_tab_idx = 0
+
+# 1. Karte
+with tabs[current_tab_idx]:
+    if not st.session_state.show:
+        card_display(row['Farsi'], "???", "Wie lautet der deutsche Ausdruck?")
+        if st.button("Lösung zeigen", type="primary", key="sh1"): st.session_state.show = True; st.rerun()
     else:
-        st.subheader("Wissenstest")
+        info = f"{row.get('Präposition', '')} | {row.get('Erläuterung', '')}".strip(" | ")
+        card_display(row['Deutsch'], row['Farsi'], info)
+        show_example(row)
         c1, c2 = st.columns(2)
-        with c1:
-            st.info(f"**{row['Deutsch']}**")
-            if not is_b2_mode and row['Plural']:
-                 st.caption(f"Plural: {row['Plural']}")
-        with c2:
-            if st.session_state.show_solution:
-                if is_b2_mode:
-                    st.success(f"Präposition: **{row['Präposition']}**")
-                else:
-                    art = row['Artikel'] if row['Artikel'] else "-"
-                    st.success(f"Artikel: **{art}**")
-                st.markdown(f"### 🇮🇷 {row['Farsi']}")
-                st.markdown("---")
-                if row['Beispielsatz']:
-                    st.markdown(f"🇩🇪 _{row['Beispielsatz']}_")
-                if row['Beispielsatz_Farsi']:
-                    st.markdown(f"🇮🇷 _{row['Beispielsatz_Farsi']}_")
-                
-                c_a, c_b = st.columns(2)
-                if c_a.button("🔴 Schwer", key="fc_red"):
-                    update_status(df, st.session_state.current_idx, "Red", current_file)
-                    st.rerun()
-                if c_b.button("🟢 Einfach", key="fc_green"):
-                    update_status(df, st.session_state.current_idx, "Green", current_file)
-                    st.rerun()
-            else:
-                st.markdown("### ???")
-                if st.button("Lösung zeigen", key="fc_sol"):
-                    st.session_state.show_solution = True
-                    st.rerun()
-        st.markdown("---")
-        c_prev, c_next = st.columns([1,1])
-        if c_prev.button("⬅️", key="fc_back", disabled=not st.session_state.history):
-            prev_card()
-            st.rerun()
-        if c_next.button("➡️", key="fc_next", type="primary"):
-            next_card()
-            st.rerun()
+        if c1.button("🔴 Schwer", key="fc_r"):
+            df.at[st.session_state.idx, 'Status'] = "Red"; get_next(); st.rerun()
+        if c2.button("🟢 Einfach", key="fc_g"):
+            df.at[st.session_state.idx, 'Status'] = "Green"; get_next(); st.rerun()
+current_tab_idx += 1
 
-with tab2:
-    if is_empty_mode:
-        st.write("---")
-    else:
-        st.subheader("Übersetze ins Deutsche")
-        st.markdown(f"### 🇮🇷 {row['Farsi']}")
-        with st.form("write_form"):
-            # Das Key-Argument ist wichtig für den Reset
-            inp = st.text_input("Deutsches Wort:", key="write_input")
-            submitted = st.form_submit_button("Prüfen")
-        
-        if submitted:
-            st.session_state.show_solution = True
-        
-        if st.session_state.show_solution:
-            user_input = inp.strip().lower()
-            target = str(row['Deutsch']).strip().lower()
-            
-            if user_input and user_input in target:
-                st.success("Richtig!")
-            elif not user_input:
-                st.warning("⚠️ Du hast nichts eingegeben.")
-            else:
-                st.error(f"Falsch. Lösung: **{row['Deutsch']}**")
-            
-            st.markdown(f"🇩🇪 _{row['Beispielsatz']}_")
-            
-            c_a, c_b = st.columns(2)
-            if c_a.button("🔴 Schwer", key="wr_red"):
-                update_status(df, st.session_state.current_idx, "Red", current_file)
-                st.rerun()
-            if c_b.button("🟢 Einfach", key="wr_green"):
-                update_status(df, st.session_state.current_idx, "Green", current_file)
-                st.rerun()
-        st.markdown("---")
-        
-        # Erzeugt 4 Spalten, die Buttons nutzen nur die mittleren (schmaleren) Spalten
-        _, c_prev, c_next, _ = st.columns([2, 0.6, 0.6, 2])
-        
-        # HIER IST DIE ÄNDERUNG: on_click=reset_input
-        if c_prev.button("⬅️ Zurück", key="wr_back", disabled=not st.session_state.history, on_click=reset_input):
-            prev_card()
-            st.rerun()
-            
-        # HIER IST DIE ÄNDERUNG: on_click=reset_input
-        if c_next.button("Nächste Karte ➡️", key="wr_next", type="primary", on_click=reset_input):
-            next_card()
-            st.rerun()
+# 2. Präp & Kasus
+if has_prep_col:
+    with tabs[current_tab_idx]: # Präp-Check
+        t_prep, _ = parse_prep_info(row['Präposition'])
+        q_text = mask_word(clean_grammar(row['Deutsch']), t_prep)
+        card_display(q_text, "_______", row['Farsi'])
+        preps = ["an", "auf", "für", "in", "mit", "nach", "über", "um", "von", "zu", "vor", "gegen"]
+        opts = list(set([t_prep.split('/')[0].strip()] + random.sample(preps, 3)))
+        random.shuffle(opts)
+        cols = st.columns(2)
+        for i, o in enumerate(opts):
+            if cols[i%2].button(o, key=f"p_{o}"):
+                if o in t_prep and o != "": 
+                    st.success(f"Richtig! {row['Präposition']}"); show_example(row)
+                    if st.button("Nächste", on_click=get_next, key="n_p"): st.rerun()
+                else: st.error("Falsch!")
+    current_tab_idx += 1
+    
+    with tabs[current_tab_idx]: # Kasus-Check
+        _, t_kasus = parse_prep_info(row['Präposition'])
+        card_display(f"{clean_grammar(row['Deutsch'])}", "???", "Welcher Kasus folgt?")
+        c1, c2 = st.columns(2)
+        if c1.button("Akkusativ", key="k_akk"):
+            if "Akkusativ" in t_kasus: st.success("Richtig!"); show_example(row); st.button("Weiter", on_click=get_next, key="n_k1")
+            else: st.error("Falsch!")
+        if c2.button("Dativ", key="k_dat"):
+            if "Dativ" in t_kasus: st.success("Richtig!"); show_example(row); st.button("Weiter", on_click=get_next, key="n_k2")
+            else: st.error("Falsch!")
+    current_tab_idx += 1
 
-with tab3:
-    if is_empty_mode or not row['Beispielsatz']:
-        st.write("Keine Sätze verfügbar.")
-    else:
-        st.subheader("Lückentext")
-        hidden_text = row['Beispielsatz']
-        term_to_hide = str(row['Präposition']).split('+')[0].split('/')[0].strip() if is_b2_mode else str(row['Deutsch'])
-        masked = hide_term_in_sentence(hidden_text, term_to_hide)
-        
-        st.markdown(f"### {masked}")
-        st.caption(f"Hinweis: {row['Farsi']}")
-        
-        if st.button("Aufdecken", key="gap_sol"):
-            st.session_state.show_solution = True
-            st.rerun()
-        if st.session_state.show_solution:
-            st.success(f"Lösung: **{term_to_hide}**")
-            st.markdown(f"_{row['Beispielsatz']}_")
-            c_a, c_b = st.columns(2)
-            if c_a.button("🔴 Schwer", key="gap_red"):
-                update_status(df, st.session_state.current_idx, "Red", current_file)
-                st.rerun()
-            if c_b.button("🟢 Einfach", key="gap_green"):
-                update_status(df, st.session_state.current_idx, "Green", current_file)
-                st.rerun()
-        st.markdown("---")
-        c_prev, c_next = st.columns([1,1])
-        if c_prev.button("⬅️ Zurück", key="gap_back", disabled=not st.session_state.history):
-            prev_card()
-            st.rerun()
-        if c_next.button("Nächste Karte ➡️", key="gap_next", type="primary"):
-            next_card()
-            st.rerun()
+# 3. Verb & Syn
+if has_expl_col:
+    with tabs[current_tab_idx]: # Verb-Check
+        v_target = extract_verb(row['Deutsch'])
+        q_text = mask_word(clean_grammar(row['Deutsch']), v_target)
+        card_display(q_text, row['Farsi'], "Welches Verb passt?")
+        v_opts = list(set([v_target] + random.sample(["nehmen", "geben", "machen", "stellen", "kommen", "bringen"], 3)))
+        random.shuffle(v_opts)
+        cols = st.columns(2)
+        for i, o in enumerate(v_opts):
+            if cols[i%2].button(o, key=f"v_{o}"):
+                if o == v_target: 
+                    st.success(f"Richtig: {row['Deutsch']}"); show_example(row)
+                    st.button("Nächste", on_click=get_next, key="n_v")
+                else: st.error("Falsch!")
+    current_tab_idx += 1
+    
+    with tabs[current_tab_idx]: # Synonym
+        card_display(row.get('Erläuterung', 'Synonym'), "???", row['Farsi'])
+        if st.button("Lösung aufdecken", key="sl_btn"):
+            st.info(row['Deutsch']); show_example(row)
+            st.button("Weiter", on_click=get_next, key="n_s")
+    current_tab_idx += 1
 
-with tab4:
-    st.subheader("Liste bearbeiten")
-    edited_df = st.data_editor(df, num_rows="dynamic", key="editor", use_container_width=True)
-    if st.button("💾 Speichern", type="primary"):
-        edited_df = edited_df.fillna("")
-        st.session_state.vocab_df = edited_df
-        save_data(edited_df, current_file)
-        st.success("Gespeichert!")
-        st.rerun()
+# 4. Standard (wenn keine Präp/Expl)
+if not has_prep_col and not has_expl_col:
+    with tabs[current_tab_idx]: # Standard Üben
+        card_display(row['Farsi'], "Übersetze...", "Deutsch gesucht")
+        u_in = st.text_input("Eingabe:", key="u_in").strip().lower()
+        if st.button("Prüfen"):
+            if not u_in: st.warning("⚠️ Keine Eingabe")
+            elif u_in in clean_grammar(row['Deutsch']).lower(): 
+                st.success("Richtig!"); show_example(row)
+            else: st.error(f"Falsch! Lösung: {row['Deutsch']}")
+            st.button("Nächste ➡️", on_click=get_next, key="n_std")
+    current_tab_idx += 1
+    
+    with tabs[current_tab_idx]: # Lückentext
+        sentence = str(row.get('Beispielsatz', ''))
+        term = clean_grammar(row['Deutsch'])
+        masked_sentence = sentence.replace(term, "_______") if term in sentence else sentence
+        card_display("Lückentext", masked_sentence, row['Farsi'])
+        if st.button("Lösung"):
+            st.write(f"Lösung: {row['Deutsch']}"); show_example(row)
+            st.button("Weiter", on_click=get_next)
+    current_tab_idx += 1
+
+# 5. PONS
+with tabs[current_tab_idx]:
+    st.subheader(f"PONS Analyse: {clean_grammar(row['Deutsch'])}")
+    pons_url = get_pons_url(row['Deutsch'])
+    st.markdown(f"[Direkt bei PONS öffnen]({pons_url})")
+    st.components.v1.iframe(pons_url, height=600, scrolling=True)
+current_tab_idx += 1
+
+# 6. Liste
+with tabs[current_tab_idx]:
+    edited = st.data_editor(df, use_container_width=True, hide_index=True)
+    if st.button("💾 Speichern"):
+        edited.to_csv(current_file, index=False); st.success("Gespeichert!")
+
+# --- NAV UNTEN ---
+st.divider()
+c1, c2 = st.columns(2)
+if c1.button("⬅️ Zurück", disabled=not st.session_state.hist, key="nav_p"):
+    st.session_state.idx = st.session_state.hist.pop(); st.rerun()
+if c2.button("Überspringen ➡️", on_click=get_next, key="nav_next"): st.rerun()

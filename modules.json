@@ -1,7 +1,7 @@
 {
     "B2: Verben mit Präpositionen": "vokabeln.csv",
     "B1 Teil 1 - Allgemeiner Wortschatz": "vokabeln_b1.csv",
-    "B1 Teil 2 - Allgemeiner Wortschatz": "vokabeln_b1_teil2.csv",
-    "B2 Wörter mit präpositionen": "woerterbuch_farsi.csv",
-    "B2: Verben": "irreg_verb.csv"
-}
+    "B1 Teil 2 - Allgemeiner Wortschatz": "vokabeln_b1_teil2_bereinigt.csv",
+    "B2: Wörter mit Präpositionen": "woerterbuch_farsi.csv",
+    "B2: Verben": "irreg_verb.csv",
+    "B2: Nomen-Verb-Verbindungen": "Verb_Nom_verbind.csv"}
