@@ -78,10 +78,6 @@ def show_example(row):
             <i style="color: #555;">{row.get('Beispielsatz_Farsi', '')}</i>
         </div>""", unsafe_allow_html=True)
 
-def get_pons_url(word):
-    query = clean_grammar(word).replace(" ", "+")
-    return f"https://de.pons.com/text-%C3%BCbersetzung/deutsch-persisch?q={query}"
-
 # --- DATA LOGIC ---
 
 def load_data(file):
@@ -148,7 +144,7 @@ tab_list = ["🃏 Karte"]
 if has_prep_col: tab_list += ["🎯 Präp", "⚖️ Kasus"]
 if has_expl_col: tab_list += ["🧩 Verb", "✍️ Syn"]
 if not has_prep_col and not has_expl_col: tab_list += ["✍️ Üben", "🧩 Lücke"]
-tab_list += ["🔍 PONS", "📝 Liste"]
+tab_list += ["📝 Liste"]
 
 tabs = st.tabs(tab_list)
 
@@ -253,14 +249,6 @@ if not has_prep_col and not has_expl_col:
             st.write(f"Lösung: {row['Deutsch']}"); show_example(row)
             st.button("Weiter", on_click=get_next)
     current_tab_idx += 1
-
-# 5. PONS
-with tabs[current_tab_idx]:
-    st.subheader(f"PONS Analyse: {clean_grammar(row['Deutsch'])}")
-    pons_url = get_pons_url(row['Deutsch'])
-    st.markdown(f"[Direkt bei PONS öffnen]({pons_url})")
-    st.components.v1.iframe(pons_url, height=600, scrolling=True)
-current_tab_idx += 1
 
 # 6. Liste
 with tabs[current_tab_idx]:
