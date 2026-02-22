@@ -6,7 +6,7 @@
         },
         "B1 Teil 1": {
             "file": "vokabeln_b1.csv",
-            "allowed_trainers": ["flashcard", "list_editor"]
+            "allowed_trainers": ["flashcard", "list_editor", "article", "plural"]
         },
         "B1 Teil 2": {
             "file": "vokabeln_b1_teil2_bereinigt.csv",
@@ -81,4 +81,5 @@
             "required_columns": []
         }
     ]
+
 }
