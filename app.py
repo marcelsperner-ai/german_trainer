@@ -158,18 +158,27 @@ else:
                  st.session_state.get(state_key_art, {}).get('finished', False))
 
     if not quick_edit:
-        cols = st.columns([1, 1, 1, 1]) if is_solved else st.columns([1, 2, 1])
-        if cols[0].button("⬅️ Zurück", disabled=not st.session_state.history, use_container_width=True, key=f"nav_back_{st.session_state.idx}"):
-            st.session_state.idx = st.session_state.history.pop()
-            st.session_state.show_solution = False; st.rerun()
+        # Wir nutzen 4 Spalten, wenn gelöst, sonst 2 für Back/Next
         if is_solved:
-            if cols[1].button("🔴 Schwer", use_container_width=True, key=f"rate_hard_{st.session_state.idx}"):
+            c1, c2, c3, c4 = st.columns([1, 1, 1, 1])
+            if c1.button("⬅️", key=f"nav_back_{st.session_state.idx}"):
+                if st.session_state.history:
+                    st.session_state.idx = st.session_state.history.pop()
+                    st.session_state.show_solution = False; st.rerun()
+            if c2.button("🔴", key=f"rate_hard_{st.session_state.idx}"):
                 log_event(st.session_state.current_vocab_key, st.session_state.active_trainer_id, row['Deutsch'], "Incorrect")
                 st.session_state.df.at[st.session_state.idx, 'Status'] = "Red"
                 save_data(st.session_state.df, st.session_state.loaded_file); get_next_index(); st.rerun()
-            if cols[2].button("🟢 Einfach", use_container_width=True, key=f"rate_easy_{st.session_state.idx}"):
+            if c3.button("🟢", key=f"rate_easy_{st.session_state.idx}"):
                 log_event(st.session_state.current_vocab_key, st.session_state.active_trainer_id, row['Deutsch'], "Correct")
                 st.session_state.df.at[st.session_state.idx, 'Status'] = "Green"
                 save_data(st.session_state.df, st.session_state.loaded_file); get_next_index(); st.rerun()
-        if cols[-1].button("Nächste ➡️", use_container_width=True, key=f"nav_next_{st.session_state.idx}"):
-            get_next_index(); st.rerun()
+            if c4.button("➡️", key=f"nav_next_{st.session_state.idx}"):
+                get_next_index(); st.rerun()
+        else:
+            c1, c2 = st.columns([1, 1])
+            if c1.button("⬅️", key=f"nav_back_unsolved_{st.session_state.idx}", disabled=not st.session_state.history):
+                st.session_state.idx = st.session_state.history.pop()
+                st.session_state.show_solution = False; st.rerun()
+            if c2.button("➡️", key=f"nav_next_unsolved_{st.session_state.idx}"):
+                get_next_index(); st.rerun()
