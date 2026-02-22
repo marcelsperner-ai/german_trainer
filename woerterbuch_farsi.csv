@@ -87,7 +87,7 @@ beziehen,ارجاع دادن,refer (to),Die Statistik bezieht sich auf das letzt
 denken,فکر کردن,think (about),Ich denke oft an meinen Urlaub am Meer.,من اغلب به تعطیلاتم در کنار دریا فکر می‌کنم.,Neutral,an + A,der,Gedanken
 demonstrieren,تظاهرات کردن,demonstrate,Tausende demonstrierten gegen die neue Gesetzesänderung.,هزاران نفر علیه تغییر قانون جدید تظاهرات کردند.,Neutral,gegen + A,die,Demonstrationen
 diskutieren,بحث کردن,discuss,Wir müssen dringend über die Kosten sprechen.,ما باید فوراً در مورد هزینه‌ها بحث کنیم.,Neutral,über + A,die,Diskussionen
-eignen,مناسب بودن,be suitable/fit,Dieses Material eignet sich gut für den Bau von Möbeln.,این ماده برای ساخت مبلمان مناسب است.,Neutral,für + A,die,Eignungen
+eignen,مناسب بودن,be suitable/fit,Dieses Material eignet sich gut für den Bau von Möbeln.,این ماده برای ساخت مبلمان مناسب است.,Red,für + A,die,Eignungen
 einladen,دعوت کردن,invite,Er hat mich zu seinem Geburtstag eingeladen.,او مرا به جشن تولدش دعوت کرده است.,Neutral,zu + D,die,Einladungen
 Einstellung,نگرش، دیدگاه,attitude (towards),Seine positive Einstellung zu seiner Arbeit ist bewundernswert.,نگرش مثبت او نسبت به کارش قابل تحسین است.,Neutral,zu + D,die,Einstellungen
 einverstanden,موافق بودن,agree (with),Ich bin mit dem neuen Plan des Teams vollkommen einverstanden.,من کاملاً با برنامه جدید تیم موافق هستم.,Neutral,mit + D,das,Einverständnisse
@@ -127,7 +127,7 @@ sich gewöhnen,عادت کردن,to get used to,Er hat sich schnell an das neue 
 glauben,باور داشتن / اعتقاد,believe / belief,Wir glauben fest an den Erfolg unserer Strategie.,ما قویاً به موفقیت استراتژی خود اعتقاد داریم.,Neutral,an + A,der,die Glauben
 glücklich,خوشحال,happy,Sie war glücklich über das unerwartete Geschenk.,او از هدیه غیرمنتظره خوشحال بود.,Neutral,über + A,,
 gratulieren,تبریک گفتن / تبریک,congratulate / congratulation,Ich gratuliere dir herzlich zu deinem neuen Job.,من صمیمانه به خاطر شغل جدیدت به تو تبریک می‌گویم.,Neutral,zu + D,die,die Gratulationen
-greifen,گرفتن / چنگ زدن,reach / grip,Der Patient greift nach der Hand des Arztes.,بیمار به سوی دست دکتر چنگ می‌زند.,Neutral,nach + D / zu + D,der,die Griffe
+greifen,گرفتن / چنگ زدن,reach / grip,Der Patient greift nach der Hand des Arztes. Bei Schmerzen greife ich zu geeigneten Schmerzmitteln.,بیمار به سوی دست دکتر چنگ می‌زند.,Neutral,nach + D / zu + D,der,die Griffe
 gut,خوب,good,Dieses Vitamin ist sehr gut für deine Gesundheit.,این ویتامین برای سلامتی تو بسیار خوب است.,Neutral,in + D / zu + D / für + A,,
 handeln,درباره بودن / روایت کردن,deal with / be about,Das Buch handelt von der Geschichte des Mittelalters.,این کتاب درباره تاریخ قرون وسطی است.,Neutral,von + D,,
 Handel,تجارت / داد و ستد,trade / commerce,Der internationale Handel mit Öl ist sehr komplex.,تجارت بین‌المللی با نفت بسیار پیچیده است.,Neutral,mit + D,der,die Handel
@@ -181,7 +181,7 @@ stolz,مغرور/افتخار,proud,Sie ist stolz auf ihre Leistungen.,او به
 streiten,دعوا کردن,to argue,Sie streiten sich oft über Politik.,آنها اغلب در مورد سیاست دعوا می کنند.,Neutral,über + A,der,Streitigkeiten
 streiten,دعوا کردن,to argue,Die Kinder streiten um das Spielzeug.,بچه ها سر اسباب بازی دعوا می کنند.,Neutral,um + A,der,Streitigkeiten
 streiten,دعوا کردن,to argue,Er streitet sich mit seinem Bruder.,او با برادرش دعوا می کند.,Neutral,mit + D,der,Streitigkeiten
-tauschen,مبادله کردن,to exchange,Er tauscht sein altes Handy gegen ein neues Modell.,او گوشی قدیمی خود را با یک مدل جدید مبادله می کند.,Neutral,gegen + A,der,Tausche
+tauschen,مبادله کردن,to exchange,Er tauscht sein altes Handy gegen ein neues Modell.,او گوشی قدیمی خود را با یک مدل جدید مبادله می کند.,Green,gegen + A,der,Tausche
 tauschen,مبادله کردن,to exchange,Ich tausche Bücher mit meinem Freund.,من با دوستم کتاب مبادله می کنم.,Neutral,mit + D,der,Tausche
 teilhaben,مشارکت کردن,to participate,Jeder soll an diesem Prozess teilhaben können.,هر کس باید بتواند در این فرآیند مشارکت کند.,Red,an + D,die,
 teilnehmen,شرکت کردن,to take part,Nimmst du an dem Marathon teil?,آیا در ماراتن شرکت می کنی؟,Neutral,an + D,die,Teilnahmen

@@ -1,7 +1,84 @@
 {
-    "B2: Verben mit Präpositionen": "vokabeln.csv",
-    "B1 Teil 1 - Allgemeiner Wortschatz": "vokabeln_b1.csv",
-    "B1 Teil 2 - Allgemeiner Wortschatz": "vokabeln_b1_teil2_bereinigt.csv",
-    "B2: Wörter mit Präpositionen": "woerterbuch_farsi.csv",
-    "B2: Verben": "irreg_verb_bereinigt.csv",
-    "B2: Nomen-Verb-Verbindungen": "Verb_Nom_verbind.csv"}
+    "vocab_modules": {
+        "B2: Verben mit Präpositionen": {
+            "file": "vokabeln.csv",
+            "allowed_trainers": ["flashcard", "preposition", "list_editor"]
+        },
+        "B1 Teil 1": {
+            "file": "vokabeln_b1.csv",
+            "allowed_trainers": ["flashcard", "list_editor"]
+        },
+        "B1 Teil 2": {
+            "file": "vokabeln_b1_teil2_bereinigt.csv",
+            "allowed_trainers": ["flashcard", "list_editor", "article", "plural"]
+        },
+        "B2: Wörter mit Präpositionen": {
+            "file": "woerterbuch_farsi.csv",
+            "allowed_trainers": ["flashcard", "preposition", "list_editor", "article", "plural"]
+        },
+        "B2: Verben": {
+            "file": "irreg_verb_bereinigt.csv",
+            "allowed_trainers": ["flashcard", "list_editor", "perfect"]
+        },
+        "B2: Nomen-Verb-Verbindungen": {
+            "file": "Verb_Nom_verbind.csv",
+            "allowed_trainers": ["flashcard", "verb_check", "synonyms", "article", "list_editor", "plural", "perfect"]
+        },
+        "Relativesätze": {
+            "file": "relativ.csv",
+            "allowed_trainers": ["relativ_pronom", "relativ_satz", "list_editor"]
+        }
+    },
+    "training_modules": [
+        {
+            "name": "🃏 Karte",
+            "id": "flashcard",
+            "required_columns": ["Deutsch", "Farsi"]
+        },
+        {
+            "name": "🎯 Präp",
+            "id": "preposition",
+            "required_columns": ["Präposition"]
+        },
+        {
+            "name": "🧩 Verb",
+            "id": "verb_check",
+            "required_columns": ["Erläuterung"]
+        },
+        {
+            "name": "✍️ Syn",
+            "id": "synonyms",
+            "required_columns": ["Erläuterung", "Deutsch"]
+        },
+        {
+            "name": "🧭 Artikel",
+            "id": "article",
+            "required_columns": ["Artikel"]
+        },
+        {
+            "name": "👥 Plural",
+            "id": "plural",
+            "required_columns": ["Plural"]
+        },
+        {
+            "name": "<-> Relativpronomen",
+            "id": "relativ_pronom",
+            "required_columns": ["Relativpronomen"]
+        },
+        {
+            "name": "<-> Relativsatzbau",
+            "id": "relativ_satz",
+            "required_columns": ["Relativpronomen"]
+        },
+        {
+            "name": "⏳ Perfekt",
+            "id": "perfect",
+            "required_columns": ["Perfekt"]
+        },
+        {
+            "name": "📝 Liste",
+            "id": "list_editor",
+            "required_columns": []
+        }
+    ]
+}
